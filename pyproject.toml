@@ -1,7 +1,7 @@
 [project]
 name = "2026-tgam-bocspeeches"
 version = "0.1.0"
-description = "Add your description here"
+description = "Scraping and analysis of Bank of Canada speeches for hawkishness scoring"
 requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.14.3",
