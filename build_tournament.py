@@ -138,7 +138,7 @@ def main():
     print(f"Running tournament on {len(speeches)} speeches with sufficient text")
 
     speeches_by_id = {s["id"]: s for s in speeches}
-    env = trueskill.TrueSkill(draw_probability=0.1)
+    env = trueskill.TrueSkill(mu=25, sigma=8.333, draw_probability=0.1)
 
     if STATE_PATH.exists():
         state = json.loads(STATE_PATH.read_text())
@@ -187,6 +187,8 @@ def main():
             pbar.update(1)
             active_ids = [sid for sid in active_ids if ratings[sid].sigma >= SIGMA_THRESHOLD]
 
+            pbar.set_postfix(active=len(active_ids), result=result)
+
             if total_comparisons % CHECKPOINT_EVERY == 0:
                 state = {
                     "ratings": ratings_to_dict(ratings),
@@ -194,17 +196,21 @@ def main():
                     "total_comparisons": total_comparisons,
                     "active_remaining": len(active_ids),
                 }
-                STATE_PATH.write_text(json.dumps(state, indent=2))
-                pbar.set_postfix(active=len(active_ids), comparisons=total_comparisons)
+                tmp = STATE_PATH.with_suffix(".tmp")
+                tmp.write_text(json.dumps(state, indent=2))
+                os.replace(tmp, STATE_PATH)
 
             time.sleep(DELAY)
 
-    STATE_PATH.write_text(json.dumps({
+    final_state = {
         "ratings": ratings_to_dict(ratings),
         "comparison_log": comparison_log,
         "total_comparisons": total_comparisons,
         "active_remaining": 0,
-    }, indent=2))
+    }
+    tmp = STATE_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(final_state, indent=2))
+    os.replace(tmp, STATE_PATH)
 
     results = []
     for s in speeches:
