@@ -5,6 +5,7 @@ Output: data/speeches_raw.json
 Each entry: {id, date, speaker, title, url, text, text_length}
 """
 
+import hashlib
 import json
 import re
 import time
@@ -78,9 +79,10 @@ def fetch_speech_text(url: str, session: requests.Session) -> str:
 
 
 def make_id(speech: dict) -> str:
-    """Generate a stable slug ID from date + title."""
+    """Generate a stable, unique slug ID from date + title + URL hash."""
     slug = re.sub(r"[^a-z0-9]+", "-", speech["title"].lower()).strip("-")[:60]
-    return f"{speech['date']}-{slug}"
+    suffix = hashlib.md5(speech["url"].encode()).hexdigest()[:6]
+    return f"{speech['date']}-{slug}-{suffix}"
 
 
 def main():
