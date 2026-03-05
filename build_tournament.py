@@ -16,6 +16,7 @@ import json
 import os
 import random
 import re
+import string
 import time
 from pathlib import Path
 
@@ -52,10 +53,12 @@ def anonymize(text: str, speaker_name: str) -> str:
     result = text
     if speaker_name:
         parts = speaker_name.strip().split()
-        name_variants = [speaker_name] + parts
+        # Strip punctuation from parts to handle comma-separated multi-speaker strings
+        # e.g. "Tiff Macklem, Carolyn Rogers" -> parts include "Macklem," which must be cleaned
+        clean_parts = [p.strip(string.punctuation) for p in parts]
+        name_variants = [speaker_name] + [p for p in clean_parts if len(p) > 2]
         for variant in name_variants:
-            if len(variant) > 2:
-                result = re.sub(re.escape(variant), "[SPEAKER]", result, flags=re.IGNORECASE)
+            result = re.sub(re.escape(variant), "[SPEAKER]", result, flags=re.IGNORECASE)
     title_pattern = r"\b(Governor|Deputy Governor|Senior Deputy Governor|Chair|President)\s+\[SPEAKER\]"
     result = re.sub(title_pattern, "[THE SPEAKER]", result, flags=re.IGNORECASE)
     title_name_pattern = r"\b(Governor|Deputy Governor|Senior Deputy Governor)\s+[A-Z][a-z]+"

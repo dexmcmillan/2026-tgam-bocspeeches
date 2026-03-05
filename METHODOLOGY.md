@@ -90,7 +90,7 @@ era_adjusted = 50 + (raw_score − quarterly_mean)
 
 An era-adjusted score above 50 means the speech was more hawkish than its contemporaries in that quarter. Below 50 means more dovish than contemporaries.
 
-Note: Quarters containing only a single speech receive an era-adjusted score of exactly 50.0, since there are no contemporaries to compare against.
+Note: Quarters containing only a single speech receive an era-adjusted score of exactly 50.0, since there are no contemporaries to compare against. Because this formula is unbounded, era-adjusted scores can in rare cases fall slightly below 0 or above 100 for extreme outlier speeches within a quarter.
 
 ## Output
 
@@ -112,7 +112,7 @@ Note: Quarters containing only a single speech receive an era-adjusted score of 
 
 - **LLM judgment is not ground truth.** Scores reflect Gemini 2.0 Flash's reading of the texts, not a definitive characterization of any official's views or the Bank of Canada's policy intentions.
 
-- **Anonymization is imperfect.** Some speeches may contain indirect identity signals — references to the speaker's previous remarks, distinctive phrasing, or context that survived the name-stripping process — that could allow the model to infer who is speaking.
+- **Anonymization is imperfect.** Some speeches may contain indirect identity signals — references to the speaker's previous remarks, distinctive phrasing, or context that survived the name-stripping process — that could allow the model to infer who is speaking. Conversely, the title-based fallback regex may *over-anonymize* by replacing references to third-party governors cited within a speech (e.g., a Macklem speech that quotes a Poloz-era decision would have "Governor Poloz" replaced with "[THE SPEAKER]").
 
 - **Era-adjustment is a heuristic.** The quarterly averaging assumes that the distribution of hawkishness within any quarter is centered around the prevailing policy stance. This holds reasonably well across rate cycles but may be noisy in quarters with very few speeches.
 
