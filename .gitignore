@@ -1,0 +1,5 @@
+data/
+gemini_api_key.txt
+*.pyc
+__pycache__/
+.ipynb_checkpoints/
