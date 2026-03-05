@@ -32,7 +32,7 @@ RESULTS_PATH = Path("data/tournament_results.json")
 SIGMA_THRESHOLD = 2.0
 MAX_TEXT_CHARS = 3000
 CHECKPOINT_EVERY = 100
-DELAY = 2.0
+DELAY = 0.5
 YEAR_WINDOW = 3
 
 
@@ -169,8 +169,10 @@ def main():
             try:
                 result = compare_speeches(client, speeches_by_id[a_id], speeches_by_id[b_id])
             except Exception as e:
-                print(f"\nAPI error: {e}. Retrying after 10s...")
-                time.sleep(10)
+                # Back off longer on rate limit errors (429), shorter on transient errors
+                wait = 60 if "429" in str(e) or "quota" in str(e).lower() else 10
+                print(f"\nAPI error: {e}. Retrying after {wait}s...")
+                time.sleep(wait)
                 continue
 
             r_a, r_b = ratings[a_id], ratings[b_id]
