@@ -30,7 +30,7 @@ Anonymization steps applied to each speech before it is sent to Gemini:
 
 ### Comparison structure
 
-Each comparison presents two anonymized speeches (truncated to 3,000 characters at the nearest sentence boundary). The prompt is:
+Each comparison presents two anonymized speeches (truncated to 15,000 characters at the nearest sentence boundary — the median speech is ~13,000 characters, so most speeches are sent in full). The prompt is:
 
 > "Which speech takes a more hawkish position on monetary policy — meaning a stronger preference for tighter monetary policy, higher interest rates, or greater concern about inflation risks relative to growth risks? Reply with ONLY one of: A, B, or EQUAL"
 
@@ -120,7 +120,7 @@ Note: Quarters containing only a single speech receive an era-adjusted score of 
 
 - **No macro context.** Unlike FedLock, this version does not provide macroeconomic indicators (inflation, unemployment, GDP) alongside each comparison. Hawkishness is judged on textual tone alone, not tone relative to economic conditions at the time of the speech.
 
-- **Truncation.** Speeches longer than 3,000 characters are truncated at the nearest sentence boundary. Very long speeches may have substantive content in later sections that is not considered.
+- **Truncation.** Speeches longer than 15,000 characters are truncated at the nearest sentence boundary. The median speech is ~13,000 characters, so most speeches are sent in full. Only the longest ~5% of speeches (above ~23,000 characters) lose more than a third of their content.
 
 ## Reproducibility
 
