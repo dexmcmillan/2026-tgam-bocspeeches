@@ -72,7 +72,39 @@
     .chart-sub {
       font-size: 0.82rem;
       color: #6b7280;
+      margin-bottom: 12px;
+    }
+
+    .chart-controls {
+      display: flex;
+      gap: 8px;
       margin-bottom: 16px;
+    }
+
+    .toggle-btn {
+      background: #1e2433;
+      border: 1px solid #374151;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.78rem;
+      color: #9ca3af;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .toggle-btn.active {
+      border-color: #f59e0b;
+      color: #f59e0b;
+    }
+
+    .toggle-btn .swatch {
+      width: 20px;
+      height: 2px;
+      background: #f59e0b;
+      border-radius: 1px;
     }
 
     #scatter-wrap {
@@ -214,6 +246,11 @@
   <div class="chart-section">
     <div class="chart-title">Hawkishness score over time</div>
     <div class="chart-sub">Each dot is one speech. Higher = more hawkish. Line shows 90-day rolling average.</div>
+    <div class="chart-controls">
+      <button class="toggle-btn active" id="rate-toggle">
+        <span class="swatch"></span> Policy rate
+      </button>
+    </div>
     <div id="scatter-wrap">
       <svg id="scatter"></svg>
     </div>
@@ -272,16 +309,16 @@ fetch('data.json').then(r => r.json()).then(data => {
   document.getElementById('meta-total').textContent = data.meta.total.toLocaleString();
   document.getElementById('meta-range').textContent = `${data.meta.date_min}–${data.meta.date_max}`;
 
-  drawScatter(data.speeches, data.trend);
+  drawScatter(data.speeches, data.trend, data.policy_rate);
   drawRankings(data.speakers);
 });
 
 // ── Scatter plot ────────────────────────────────────────────────────────────
-function drawScatter(speeches, trend) {
+function drawScatter(speeches, trend, policyRate) {
   const wrap = document.getElementById('scatter-wrap');
   const W = window.innerWidth;
   const H = Math.round(W * 0.45);
-  const margin = { top: 20, right: 20, bottom: 36, left: 44 };
+  const margin = { top: 20, right: 52, bottom: 36, left: 44 };
   const innerW = W - margin.left - margin.right;
   const innerH = H - margin.top - margin.bottom;
 
@@ -397,6 +434,56 @@ function drawScatter(speeches, trend) {
     .attr('stroke-width', 2)
     .attr('stroke-opacity', 0.7)
     .attr('d', line);
+
+  // Policy rate step line (right axis)
+  const prCutoff = new Date('2000-01-01');
+  const prFiltered = policyRate
+    .filter(d => new Date(d.date) >= prCutoff)
+    .map(d => ({ date: new Date(d.date), rate: d.rate }));
+
+  const yRate = d3.scaleLinear()
+    .domain([0, d3.max(prFiltered, d => d.rate) * 1.15])
+    .range([innerH, 0]);
+
+  // Right axis
+  const rateAxisG = g.append('g')
+    .attr('id', 'rate-axis')
+    .attr('transform', `translate(${innerW},0)`)
+    .call(d3.axisRight(yRate).ticks(5).tickSize(0).tickPadding(6)
+      .tickFormat(d => d + '%'))
+    .call(ax => ax.select('.domain').remove())
+    .call(ax => ax.selectAll('text').attr('fill', '#f59e0b').attr('font-size', 11));
+
+  // Right axis label
+  g.append('text')
+    .attr('id', 'rate-axis-label')
+    .attr('transform', `translate(${innerW + 46},${innerH / 2}) rotate(90)`)
+    .attr('text-anchor', 'middle')
+    .attr('fill', '#f59e0b')
+    .attr('font-size', 10)
+    .text('Policy rate');
+
+  const rateLine = d3.line()
+    .x(d => x(d.date))
+    .y(d => yRate(d.rate))
+    .curve(d3.curveStepAfter);
+
+  g.append('path')
+    .attr('id', 'rate-line')
+    .datum(prFiltered)
+    .attr('fill', 'none')
+    .attr('stroke', '#f59e0b')
+    .attr('stroke-width', 1.5)
+    .attr('stroke-opacity', 0.8)
+    .attr('d', rateLine);
+
+  // Toggle button
+  const rateToggle = document.getElementById('rate-toggle');
+  const rateEls = ['rate-line', 'rate-axis', 'rate-axis-label'].map(id => document.getElementById(id));
+  rateToggle.addEventListener('click', () => {
+    const on = rateToggle.classList.toggle('active');
+    rateEls.forEach(el => { if (el) el.style.display = on ? '' : 'none'; });
+  });
 }
 
 // ── Speaker rankings ────────────────────────────────────────────────────────
