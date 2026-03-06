@@ -17,7 +17,7 @@
     }
 
     .page {
-      max-width: 960px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 48px 24px 80px;
     }
@@ -286,6 +286,10 @@ function drawScatter(speeches, trend) {
 
   const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
+  const cutoff = new Date('2000-01-01');
+  speeches = speeches.filter(d => new Date(d.date) >= cutoff);
+  const trendFiltered = trend.filter(d => new Date(d.date) >= cutoff);
+
   const xExt = d3.extent(speeches, d => new Date(d.date));
   const x = d3.scaleTime().domain(xExt).range([0, innerW]);
   const y = d3.scaleLinear().domain([0, 100]).range([innerH, 0]);
@@ -294,12 +298,19 @@ function drawScatter(speeches, trend) {
   g.append('g')
     .attr('class', 'grid')
     .selectAll('line')
-    .data([25, 50, 75])
+    .data([25, 75])
     .join('line')
     .attr('x1', 0).attr('x2', innerW)
     .attr('y1', d => y(d)).attr('y2', d => y(d))
-    .attr('stroke', '#1f2937')
-    .attr('stroke-dasharray', d => d === 50 ? '4,4' : null);
+    .attr('stroke', '#1f2937');
+
+  // Neutral line (heavier)
+  g.append('line')
+    .attr('x1', 0).attr('x2', innerW)
+    .attr('y1', y(50)).attr('y2', y(50))
+    .attr('stroke', '#374151')
+    .attr('stroke-width', 2)
+    .attr('stroke-dasharray', '6,4');
 
   // Neutral label
   g.append('text')
@@ -357,7 +368,7 @@ function drawScatter(speeches, trend) {
     .on('mouseleave', () => { tooltip.style.opacity = 0; });
 
   // Trend line
-  const trendData = trend.map(d => ({ date: new Date(d.date), value: d.value }));
+  const trendData = trendFiltered.map(d => ({ date: new Date(d.date), value: d.value }));
   const line = d3.line()
     .x(d => x(d.date))
     .y(d => y(d.value))
