@@ -357,7 +357,7 @@ function drawScatter(speeches, trend) {
     tooltip.innerHTML = `
       <div class="tt-speaker">${d.speaker}</div>
       <div class="tt-date">${d.date}</div>
-      <div class="tt-title"><a href="${d.url}" target="_blank" style="color:#d1d5db;text-decoration:underline">${d.title}</a></div>
+      <div class="tt-title">${d.title} <a href="${d.url}" target="_blank" style="color:#60a5fa;text-decoration:none">(link)</a></div>
       <div class="tt-score">${label}</div>
     `;
     tooltip.style.opacity = 1;
