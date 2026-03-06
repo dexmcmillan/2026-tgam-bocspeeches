@@ -77,10 +77,15 @@
 
     #scatter-wrap {
       background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 10px;
-      padding: 8px;
+      border-top: 1px solid #1f2937;
+      border-bottom: 1px solid #1f2937;
+      border-left: none;
+      border-right: none;
+      border-radius: 0;
+      padding: 8px 0;
       position: relative;
+      width: 100vw;
+      margin-left: calc(-50vw + 50%);
     }
 
     #scatter { width: 100%; display: block; }
@@ -274,7 +279,7 @@ fetch('data.json').then(r => r.json()).then(data => {
 // ── Scatter plot ────────────────────────────────────────────────────────────
 function drawScatter(speeches, trend) {
   const wrap = document.getElementById('scatter-wrap');
-  const W = wrap.clientWidth - 16;
+  const W = window.innerWidth;
   const H = Math.round(W * 0.45);
   const margin = { top: 20, right: 20, bottom: 36, left: 44 };
   const innerW = W - margin.left - margin.right;
