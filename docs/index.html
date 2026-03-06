@@ -98,7 +98,7 @@
       border-radius: 8px;
       padding: 10px 14px;
       font-size: 0.82rem;
-      pointer-events: none;
+      pointer-events: auto;
       opacity: 0;
       transition: opacity 0.1s;
       max-width: 280px;
@@ -347,6 +347,30 @@ function drawScatter(speeches, trend) {
 
   // Dots
   const tooltip = document.getElementById('tooltip');
+  let hideTimer = null;
+
+  function showTooltip(event, d) {
+    clearTimeout(hideTimer);
+    const label = d.score >= 60 ? `<span class="hawk">Hawkish (${d.score})</span>`
+                : d.score <= 40 ? `<span class="dove">Dovish (${d.score})</span>`
+                : `Neutral (${d.score})`;
+    tooltip.innerHTML = `
+      <div class="tt-speaker">${d.speaker}</div>
+      <div class="tt-date">${d.date}</div>
+      <div class="tt-title"><a href="${d.url}" target="_blank" style="color:#d1d5db;text-decoration:underline">${d.title}</a></div>
+      <div class="tt-score">${label}</div>
+    `;
+    tooltip.style.opacity = 1;
+    tooltip.style.left = (event.clientX + 14) + 'px';
+    tooltip.style.top  = (event.clientY - 10) + 'px';
+  }
+
+  function scheduleHide() {
+    hideTimer = setTimeout(() => { tooltip.style.opacity = 0; }, 200);
+  }
+
+  tooltip.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+  tooltip.addEventListener('mouseleave', scheduleHide);
 
   g.selectAll('circle')
     .data(speeches)
@@ -356,21 +380,8 @@ function drawScatter(speeches, trend) {
     .attr('r', 3)
     .attr('fill', d => dotColor(d.score))
     .attr('fill-opacity', 0.55)
-    .on('mousemove', function(event, d) {
-      const label = d.score >= 60 ? `<span class="hawk">Hawkish (${d.score})</span>`
-                  : d.score <= 40 ? `<span class="dove">Dovish (${d.score})</span>`
-                  : `Neutral (${d.score})`;
-      tooltip.innerHTML = `
-        <div class="tt-speaker">${d.speaker}</div>
-        <div class="tt-date">${d.date}</div>
-        <div class="tt-title"><a href="${d.url}" target="_blank" style="color:#d1d5db;text-decoration:underline">${d.title}</a></div>
-        <div class="tt-score">${label}</div>
-      `;
-      tooltip.style.opacity = 1;
-      tooltip.style.left = (event.clientX + 14) + 'px';
-      tooltip.style.top  = (event.clientY - 10) + 'px';
-    })
-    .on('mouseleave', () => { tooltip.style.opacity = 0; });
+    .on('mousemove', showTooltip)
+    .on('mouseleave', scheduleHide);
 
   // Trend line
   const trendData = trendFiltered.map(d => ({ date: new Date(d.date), value: d.value }));
