@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BoC Hawk-Dove Index</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0e17;
+      color: #d1d5db;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* Header */
+    h1 {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      color: #9ca3af;
+      font-size: 1rem;
+      max-width: 680px;
+      margin-bottom: 24px;
+    }
+
+    .meta-pills {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .pill {
+      background: #1e2433;
+      border: 1px solid #2d3448;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.82rem;
+      color: #9ca3af;
+    }
+
+    .pill strong { color: #e5e7eb; }
+
+    /* Chart container */
+    .chart-section { margin-bottom: 56px; }
+
+    .chart-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #e5e7eb;
+      margin-bottom: 4px;
+    }
+
+    .chart-sub {
+      font-size: 0.82rem;
+      color: #6b7280;
+      margin-bottom: 16px;
+    }
+
+    #scatter-wrap {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      padding: 8px;
+      position: relative;
+    }
+
+    #scatter { width: 100%; display: block; }
+
+    /* Tooltip */
+    #tooltip {
+      position: fixed;
+      background: #1e2433;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.1s;
+      max-width: 280px;
+      z-index: 100;
+      line-height: 1.5;
+    }
+
+    #tooltip .tt-speaker { font-weight: 700; color: #e5e7eb; font-size: 0.9rem; }
+    #tooltip .tt-date { color: #9ca3af; font-size: 0.78rem; margin-bottom: 4px; }
+    #tooltip .tt-title { color: #d1d5db; margin-bottom: 6px; }
+    #tooltip .tt-score { color: #60a5fa; font-weight: 600; }
+
+    /* Rankings table */
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #e5e7eb;
+      margin-bottom: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    thead th {
+      text-align: left;
+      color: #6b7280;
+      font-weight: 500;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid #1f2937;
+      padding: 6px 10px 10px;
+    }
+
+    tbody tr { border-bottom: 1px solid #111827; }
+    tbody tr:hover { background: #111827; }
+
+    tbody td {
+      padding: 9px 10px;
+      color: #d1d5db;
+    }
+
+    .bar-cell { width: 160px; }
+
+    .bar-bg {
+      background: #1e2433;
+      border-radius: 3px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    }
+
+    .score-val { font-weight: 600; color: #e5e7eb; }
+
+    .hawk { color: #ef4444; }
+    .dove { color: #60a5fa; }
+
+    /* Methodology */
+    .methodology {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      padding: 28px 32px;
+      margin-top: 56px;
+      font-size: 0.88rem;
+      color: #9ca3af;
+      line-height: 1.8;
+    }
+
+    .methodology h2 {
+      color: #e5e7eb;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .methodology p { margin-bottom: 10px; }
+
+    .methodology a { color: #60a5fa; text-decoration: none; }
+    .methodology a:hover { text-decoration: underline; }
+
+    /* Axis labels */
+    .axis-label {
+      fill: #6b7280;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <h1>BoC Hawk-Dove Index</h1>
+  <p class="subtitle">
+    Every Bank of Canada speech scored on a hawkish-to-dovish spectrum using a pairwise LLM tournament.
+    Speaker names are stripped before comparison so scores reflect content, not reputation.
+  </p>
+
+  <div class="meta-pills" id="meta-pills">
+    <div class="pill"><strong id="meta-total">—</strong> speeches scored</div>
+    <div class="pill"><strong id="meta-range">—</strong></div>
+    <div class="pill">Gemini 2.0 Flash · TrueSkill</div>
+  </div>
+
+  <!-- Scatter plot -->
+  <div class="chart-section">
+    <div class="chart-title">Hawkishness score over time</div>
+    <div class="chart-sub">Each dot is one speech. Higher = more hawkish. Line shows 90-day rolling average.</div>
+    <div id="scatter-wrap">
+      <svg id="scatter"></svg>
+    </div>
+  </div>
+
+  <!-- Speaker rankings -->
+  <div class="chart-section">
+    <div class="section-title">Speaker averages <span style="color:#6b7280;font-size:0.82rem;font-weight:400">(min. 3 speeches)</span></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Speaker</th>
+          <th>Avg score</th>
+          <th class="bar-cell"></th>
+          <th style="text-align:right">Speeches</th>
+        </tr>
+      </thead>
+      <tbody id="rankings-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Methodology -->
+  <div class="methodology">
+    <h2>Methodology</h2>
+    <p>
+      Each speech is compared against randomly selected opponents from within a ±3 year window using
+      <strong style="color:#e5e7eb">Gemini 2.0 Flash</strong>. The model is asked which speech takes a
+      more hawkish position on monetary policy — meaning a stronger preference for tighter policy, higher
+      interest rates, or greater concern about inflation risks relative to growth risks.
+    </p>
+    <p>
+      Speaker names and titles are stripped from speech text before comparison so the model cannot use
+      prior knowledge of a speaker's reputation. Ratings are tracked using
+      <strong style="color:#e5e7eb">TrueSkill</strong> (μ=25, σ=8.333), a Bayesian skill rating system.
+      Speeches exit the active pool once their uncertainty (σ) falls below 4.5.
+    </p>
+    <p>
+      Raw scores are min-max normalized to a 0–100 scale. The era-adjusted score subtracts the quarterly
+      mean, re-centering to 50, to isolate each speaker's disposition from the prevailing policy environment.
+      Speeches about topics unrelated to monetary policy (banknote launches, cyber security, etc.) are excluded.
+    </p>
+    <p>
+      Inspired by <a href="https://jnathan9.github.io/fedlock/" target="_blank">FedLock</a>, an experiment
+      by Joe Weisenthal applying this methodology to Federal Reserve speeches.
+      Source code available on <a href="https://github.com/globeandmail/2026-tgam-bocspeeches" target="_blank">GitHub</a>.
+    </p>
+  </div>
+
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ── Load data ──────────────────────────────────────────────────────────────
+fetch('data.json').then(r => r.json()).then(data => {
+  document.getElementById('meta-total').textContent = data.meta.total.toLocaleString();
+  document.getElementById('meta-range').textContent = `${data.meta.date_min}–${data.meta.date_max}`;
+
+  drawScatter(data.speeches, data.trend);
+  drawRankings(data.speakers);
+});
+
+// ── Scatter plot ────────────────────────────────────────────────────────────
+function drawScatter(speeches, trend) {
+  const wrap = document.getElementById('scatter-wrap');
+  const W = wrap.clientWidth - 16;
+  const H = Math.round(W * 0.45);
+  const margin = { top: 20, right: 20, bottom: 36, left: 44 };
+  const innerW = W - margin.left - margin.right;
+  const innerH = H - margin.top - margin.bottom;
+
+  const svg = d3.select('#scatter')
+    .attr('width', W)
+    .attr('height', H);
+
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+  const xExt = d3.extent(speeches, d => new Date(d.date));
+  const x = d3.scaleTime().domain(xExt).range([0, innerW]);
+  const y = d3.scaleLinear().domain([0, 100]).range([innerH, 0]);
+
+  // Grid lines
+  g.append('g')
+    .attr('class', 'grid')
+    .selectAll('line')
+    .data([25, 50, 75])
+    .join('line')
+    .attr('x1', 0).attr('x2', innerW)
+    .attr('y1', d => y(d)).attr('y2', d => y(d))
+    .attr('stroke', '#1f2937')
+    .attr('stroke-dasharray', d => d === 50 ? '4,4' : null);
+
+  // Neutral label
+  g.append('text')
+    .attr('x', -6).attr('y', y(50) + 4)
+    .attr('text-anchor', 'end')
+    .attr('fill', '#4b5563')
+    .attr('font-size', 10)
+    .text('neutral');
+
+  // X axis
+  g.append('g')
+    .attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(x).ticks(8).tickSize(0).tickPadding(8))
+    .call(ax => ax.select('.domain').attr('stroke', '#1f2937'))
+    .call(ax => ax.selectAll('text').attr('fill', '#6b7280').attr('font-size', 11));
+
+  // Y axis
+  g.append('g')
+    .call(d3.axisLeft(y).ticks(5).tickSize(0).tickPadding(6))
+    .call(ax => ax.select('.domain').remove())
+    .call(ax => ax.selectAll('text').attr('fill', '#6b7280').attr('font-size', 11));
+
+  // Colour by score
+  function dotColor(score) {
+    if (score >= 60) return '#ef4444';
+    if (score <= 40) return '#3b82f6';
+    return '#6b7280';
+  }
+
+  // Dots
+  const tooltip = document.getElementById('tooltip');
+
+  g.selectAll('circle')
+    .data(speeches)
+    .join('circle')
+    .attr('cx', d => x(new Date(d.date)))
+    .attr('cy', d => y(d.score))
+    .attr('r', 3)
+    .attr('fill', d => dotColor(d.score))
+    .attr('fill-opacity', 0.55)
+    .on('mousemove', function(event, d) {
+      const label = d.score >= 60 ? `<span class="hawk">Hawkish (${d.score})</span>`
+                  : d.score <= 40 ? `<span class="dove">Dovish (${d.score})</span>`
+                  : `Neutral (${d.score})`;
+      tooltip.innerHTML = `
+        <div class="tt-speaker">${d.speaker}</div>
+        <div class="tt-date">${d.date}</div>
+        <div class="tt-title">${d.title}</div>
+        <div class="tt-score">${label}</div>
+      `;
+      tooltip.style.opacity = 1;
+      tooltip.style.left = (event.clientX + 14) + 'px';
+      tooltip.style.top  = (event.clientY - 10) + 'px';
+    })
+    .on('mouseleave', () => { tooltip.style.opacity = 0; });
+
+  // Trend line
+  const trendData = trend.map(d => ({ date: new Date(d.date), value: d.value }));
+  const line = d3.line()
+    .x(d => x(d.date))
+    .y(d => y(d.value))
+    .curve(d3.curveCatmullRom.alpha(0.5));
+
+  g.append('path')
+    .datum(trendData)
+    .attr('fill', 'none')
+    .attr('stroke', '#ffffff')
+    .attr('stroke-width', 2)
+    .attr('stroke-opacity', 0.7)
+    .attr('d', line);
+}
+
+// ── Speaker rankings ────────────────────────────────────────────────────────
+function drawRankings(speakers) {
+  const tbody = document.getElementById('rankings-body');
+  const max = d3.max(speakers, d => d.avg_score);
+
+  speakers.forEach(sp => {
+    const tr = document.createElement('tr');
+    const scoreClass = sp.avg_score >= 55 ? 'hawk' : sp.avg_score <= 45 ? 'dove' : '';
+    tr.innerHTML = `
+      <td>${sp.speaker}</td>
+      <td><span class="score-val ${scoreClass}">${sp.avg_score}</span></td>
+      <td class="bar-cell">
+        <div class="bar-bg">
+          <div class="bar-fill" style="width:${(sp.avg_score / 100 * 100).toFixed(1)}%"></div>
+        </div>
+      </td>
+      <td style="text-align:right;color:#6b7280">${sp.n}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+</script>
+</body>
+</html>
