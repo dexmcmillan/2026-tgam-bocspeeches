@@ -482,7 +482,7 @@ function drawScatter(speeches, trend, policyRate) {
   const rateEls = ['rate-line', 'rate-axis', 'rate-axis-label'].map(id => document.getElementById(id));
   rateToggle.addEventListener('click', () => {
     const on = rateToggle.classList.toggle('active');
-    rateEls.forEach(el => { if (el) el.style.display = on ? '' : 'none'; });
+    rateEls.forEach(el => { if (el) el.setAttribute('visibility', on ? 'visible' : 'hidden'); });
   });
 }
 
