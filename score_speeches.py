@@ -17,6 +17,35 @@ import pandas as pd
 RESULTS_PATH = Path("data/tournament_results.json")
 OUTPUT_PATH = Path("data/speeches_scored.csv")
 
+# Title keywords that identify speeches unrelated to monetary policy
+OFF_TOPIC_TITLE_KEYWORDS = [
+    # Banknotes
+    "bank note", "banknote", "$5 and $10", "$10 note", "$20 note",
+    "polymer note", "commemorative", "numismatic", "#banknoteable",
+    "note launch", "note unveiling", "note issue",
+    # Specific off-topic events
+    "cyber security", "cyber defence", "cyber defense",
+    "climate change", "thermometer rising",
+    "indigenous econom",
+    "noteworthy woman", "a noteworthy",
+    "website awards",
+    "indigenous prosperity", "economic reconciliation",
+]
+
+# Speakers whose entire BoC role is outside monetary policy
+OFF_TOPIC_SPEAKERS = {
+    "Ron Morrow",
+}
+
+
+def is_off_topic(title: str, speaker: str) -> bool:
+    t = title.lower()
+    if any(kw in t for kw in OFF_TOPIC_TITLE_KEYWORDS):
+        return True
+    if speaker in OFF_TOPIC_SPEAKERS:
+        return True
+    return False
+
 
 def normalize_0_100(series: pd.Series) -> pd.Series:
     """Min-max normalize to 0-100."""
@@ -50,6 +79,10 @@ def main():
 
     results = json.loads(RESULTS_PATH.read_text())
     df = pd.DataFrame(results)
+
+    n_before = len(df)
+    df = df[~df.apply(lambda r: is_off_topic(r["title"], r["speaker"]), axis=1)].reset_index(drop=True)
+    print(f"Filtered {n_before - len(df)} off-topic speeches ({len(df)} remaining)")
 
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df = df.dropna(subset=["date"]).sort_values("date").reset_index(drop=True)

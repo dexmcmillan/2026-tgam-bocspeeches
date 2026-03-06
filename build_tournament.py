@@ -29,7 +29,7 @@ from tqdm import tqdm
 SPEECHES_PATH = Path("data/speeches_raw.json")
 STATE_PATH = Path("data/tournament_state.json")
 RESULTS_PATH = Path("data/tournament_results.json")
-SIGMA_THRESHOLD = 2.0
+SIGMA_THRESHOLD = 4.5
 MAX_TEXT_CHARS = 15000
 CHECKPOINT_EVERY = 100
 DELAY = 0.5
